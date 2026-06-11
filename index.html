@@ -93,44 +93,68 @@
             Papa.parse("data.csv", {
                 download: true,
                 header: true,
-                skipEmptyLines: true, // لتجنب الأسطر الفارغة في ملف CSV
+                skipEmptyLines: true,
+                // تحويل أسماء الأعمدة إلى أحرف صغيرة وإزالة أي فراغات زائدة لضمان المطابقة الكاملة
+                transformHeader: function(h) {
+                    return h.trim().toLowerCase();
+                },
                 complete: function (results) {
                     csvData = results.data;
-                    console.log("Data Loaded successfully.");
+                    console.log("Data Loaded successfully.", csvData);
+                },
+                error: function(err) {
+                    console.error("Error loading CSV file:", err);
                 }
             });
         };
 
         function searchStudent() {
-            const id = document.getElementById('studentIdInput').value.trim();
+            const inputId = document.getElementById('studentIdInput').value.trim();
             
-            // الفلترة بناءً على حقل studentId من ملف الـ CSV
-            const results = csvData.filter(row => row.studentId && row.studentId.trim() === id);
+            if (!inputId) {
+                alert("الرجاء إدخال الرقم الوطني أولاً");
+                return;
+            }
+
+            // الفلترة الآمنة بغض النظر عن الفراغات المخفية في السجلات
+            const results = csvData.filter(row => {
+                const sId = row["studentid"] || row["studentId"];
+                return sId && sId.toString().trim() === inputId;
+            });
 
             if (results.length > 0) {
                 document.getElementById('errorArea').classList.add('hidden');
                 document.getElementById('resultArea').classList.remove('hidden');
                 
-                // عرض اسم الطالب من حقل studentName
-                document.getElementById('studentNameHeader').innerText = "👤 الطالب: " + results[0].studentName;
+                // جلب اسم الطالب بأمان
+                const studentName = results[0]["studentname"] || results[0]["studentName"] || "غير معروف";
+                document.getElementById('studentNameHeader').innerText = "👤 الطالب: " + studentName;
 
                 let seatingHtml = '';
                 let gradesHtml = '';
 
                 results.forEach(row => {
-                    // بناء جدول الجلوس بناءً على حقول: course, exam_date, hallandseat
+                    // استخراج القيم مع دعم الحالات المختلفة للأحرف وحمايتها من قيم الـ undefined
+                    const course = row["course"] || "—";
+                    const examDate = row["exam_date"] || row["examdate"] || "—";
+                    const hallAndSeat = row["hallandseat"] || "—";
+                    const lab = row["lab"] || "—";
+                    const theo = row["theo"] || "—";
+                    const total = row["total"] || "—";
+
+                    // إضافة السطر لجدول الجلوس
                     seatingHtml += `<tr>
-                        <td class="fw-bold">${row.course || '—'}</td>
-                        <td class="text-danger fw-bold">${row.exam_date || '—'}</td>
-                        <td><span class="badge bg-warning text-dark fs-6">${row.hallandseat || '—'}</span></td>
+                        <td class="fw-bold">${course}</td>
+                        <td class="text-danger fw-bold">${examDate}</td>
+                        <td><span class="badge bg-warning text-dark fs-6">${hallAndSeat}</span></td>
                     </tr>`;
 
-                    // بناء جدول الدرجات بناءً على حقول: course, lab, theo, total
+                    // إضافة السطر لجدول الدرجات
                     gradesHtml += `<tr>
-                        <td class="fw-bold">${row.course || '—'}</td>
-                        <td>${row.lab || '—'}</td>
-                        <td>${row.theo || '—'}</td>
-                        <td class="table-success fw-bold">${row.total || '—'}</td>
+                        <td class="fw-bold">${course}</td>
+                        <td>${lab}</td>
+                        <td>${theo}</td>
+                        <td class="table-success fw-bold">${total}</td>
                     </tr>`;
                 });
 
