@@ -21,9 +21,7 @@
 </head>
 
 <body>
-<script>window.location.href="https://misrataca.edu.ly/renew.php"</script>
     <div class="container my-4 text-end">
-
 
         <div class="p-4 shadow-lg rounded bg-white mb-4 border-top border-primary border-5">
             <h2 class="text-center mb-4 text-primary fw-bold"> بوابة الطالب البديلة- كلية الطيران المدني مصراتة</h2>
@@ -33,8 +31,7 @@
                         placeholder="أدخل الرقم الوطني لرؤية بياناتك...">
                 </div>
                 <div class="col-md-3">
-                    <button onclick="searchStudent()" class="btn btn-primary btn-lg w-100 shadow-sm">🔍 عرض
-                        البيانات</button>
+                    <button onclick="searchStudent()" class="btn btn-primary btn-lg w-100 shadow-sm">🔍 عرض البيانات</button>
                 </div>
             </div>
         </div>
@@ -57,8 +54,7 @@
                                 <tr>
                                     <th>المقرر</th>
                                     <th>تاريخ الامتحان</th>
-                                    <th>القاعة</th>
-                                    <th>الكرسي</th>
+                                    <th>موقع الجلوس (القاعة والكرسي)</th>
                                 </tr>
                             </thead>
                             <tbody id="seatingBody"></tbody>
@@ -71,11 +67,9 @@
                             <thead class="table-primary">
                                 <tr>
                                     <th>المقرر</th>
-                                    <th>أعمال العملي</th>
-                                    <th>أعمال النظري</th>
-                                    <th>مجموع الأعمال</th>
-                                    <th>نهائي العملي</th>
-                                    
+                                    <th>أعمال العملي (Lab)</th>
+                                    <th>أعمال النظري (Theo)</th>
+                                    <th>مجموع الأعمال (Total)</th>
                                 </tr>
                             </thead>
                             <tbody id="gradesBody"></tbody>
@@ -87,7 +81,7 @@
 
         <div id="errorArea"
             class="alert alert-warning text-center shadow-sm rounded-4 animate__animated animate__shakeX hidden">
-            ⚠️ عذراً، لم يتم العثور على بيانات.
+            ⚠️ عذراً، لم يتم العثور على بيانات لهذا الرقم الوطني.
         </div>
     </div>
 
@@ -99,41 +93,45 @@
             Papa.parse("data.csv", {
                 download: true,
                 header: true,
+                skipEmptyLines: true, // لتجنب الأسطر الفارغة في ملف CSV
                 complete: function (results) {
                     csvData = results.data;
-                    console.log("Data Loaded");
+                    console.log("Data Loaded successfully.");
                 }
             });
         };
 
         function searchStudent() {
             const id = document.getElementById('studentIdInput').value.trim();
-            const results = csvData.filter(row => row.studentId === id);
+            
+            // الفلترة بناءً على حقل studentId من ملف الـ CSV
+            const results = csvData.filter(row => row.studentId && row.studentId.trim() === id);
 
             if (results.length > 0) {
                 document.getElementById('errorArea').classList.add('hidden');
                 document.getElementById('resultArea').classList.remove('hidden');
+                
+                // عرض اسم الطالب من حقل studentName
                 document.getElementById('studentNameHeader').innerText = "👤 الطالب: " + results[0].studentName;
 
-                // ملء جدول الجلوس
                 let seatingHtml = '';
                 let gradesHtml = '';
 
                 results.forEach(row => {
+                    // بناء جدول الجلوس بناءً على حقول: course, exam_date, hallandseat
                     seatingHtml += `<tr>
-                    <td class="fw-bold">${row.course}</td>
-                    <td class="text-danger fw-bold">${row.examDate || '—'}</td>
-                    <td><span class="badge bg-warning text-dark">${row.hall || '—'}</span></td>
-                    <td class="fw-bold text-primary">${row.seat || '—'}</td>
-                </tr>`;
+                        <td class="fw-bold">${row.course || '—'}</td>
+                        <td class="text-danger fw-bold">${row.exam_date || '—'}</td>
+                        <td><span class="badge bg-warning text-dark fs-6">${row.hallandseat || '—'}</span></td>
+                    </tr>`;
 
+                    // بناء جدول الدرجات بناءً على حقول: course, lab, theo, total
                     gradesHtml += `<tr>
-                    <td class="fw-bold">${row.course}</td>
-                    <td>${row.lab || '—'}</td>
-                    <td>${row.theo || '—'}</td>
-                    <td class="table-success fw-bold">${row.total_work || '—'}</td>
-                      <td class="table-success fw-bold">${row.final || '—'}</td>
-                </tr>`;
+                        <td class="fw-bold">${row.course || '—'}</td>
+                        <td>${row.lab || '—'}</td>
+                        <td>${row.theo || '—'}</td>
+                        <td class="table-success fw-bold">${row.total || '—'}</td>
+                    </tr>`;
                 });
 
                 document.getElementById('seatingBody').innerHTML = seatingHtml;
